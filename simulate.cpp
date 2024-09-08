@@ -11,7 +11,10 @@ std::vector<std::pair<double,double> > r0;
 std::vector<std::pair<double,double> > r1;
 std::vector<std::pair<double,double> > r2;
 std::vector<std::pair<double,double> > ocv;
-
+std::vector<std::pair<double,double> > power; //First column is delta t (s), second column is Power (Wh)
+double Q_n = 3039.12; // for 18650-25R 9P36S, change for each case
+double P_diss = 0.0;
+double E_diss = 0.0;
 /*
 PARAMETER FLAGS FOR READING IN CSV
 C1 = 0
@@ -20,8 +23,69 @@ R0 = 2
 R1 = 3
 R2 = 4
 OCV = 5
+power = 6
 */
 
+double Calc_SOC(double prev_SOC,double Current, double delta_t)
+{
+    double new_SOC = prev_SOC + Current/Q_n * delta_t;
+    return new_SOC;
+
+}
+
+double Calc_V1(double Prev_v1, double R1, double I_L, double C_1, double delta_t)
+{
+    double new_V1 = Prev_v1 + delta_t * (-1 * prev_v1/R1 + I_L)/C_1;
+    return new_v1;
+}
+
+double Calc_V2(double Prev_v2, double R2, double I_L, double C_2, double delta_t)
+{
+    double new_V2 = Prev_v2 + delta_t * (-1 * prev_v2/R2 + I_L)/C_2;
+    return new_v2;
+}
+
+double Calc_IL(double R0, double OCV, double V1, double V2, double IL, double P){
+    double I_L1 = (-1*(OCV-V1-V2) + math.sqrt(math.abs((OCV-V1-V2)^2 - 4 * (R0 * P))))/-2*R0;
+    double I_L2 = (-1*(OCV-V1-V2) - math.sqrt(math.abs((OCV-V1-V2)^2 - 4 * (R0 * P))))/-2*R0;
+
+    double V_T1 = P/I_L1;
+    double V_T2 = P/I_L2;
+
+    if(V_T1 == OCV-V1-V2-I_L1*R0){
+        return IL_1;
+    }
+    else{
+        return IL_2;
+    }
+}
+
+void run_sim(){
+    /*
+    for first time step
+    V1 = 0;
+    v2 = 0;
+    P_out = 0;
+    t = 0
+    SOC = 1;
+
+    double I_L = Calc_I();
+    
+    while(until we reachc end of drive cycle){
+        SOC = Calc SOC(SOC, I_t,delta t)
+        Find R-2RC Values
+        V1 = Calc_V1;
+        V2= Calc_v2;
+        I_L = Calc_I_L;
+        
+        P_diss += V1^2/R1 + V2^2/R2 + I_L^2*rR0
+        E_diss += P_diss*delta_t
+    }
+    
+    
+    */
+
+}
 
 void read_parameters(std::string parameter_csv, int parameter_flag)
 {
@@ -70,6 +134,8 @@ void read_parameters(std::string parameter_csv, int parameter_flag)
                 case 5:
                     ocv.push_back(csv_pair);
                     break;
+                case 6
+                    power.push_back(csv_pair)
             }
             
         }
