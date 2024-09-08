@@ -49,8 +49,25 @@ double Calc_IL(double R0, double OCV, double V1, double V2, double IL, double P)
     double I_L1 = (-1*(OCV-V1-V2) + math.sqrt(math.abs((OCV-V1-V2)^2 - 4 * (R0 * P))))/-2*R0;
     double I_L2 = (-1*(OCV-V1-V2) - math.sqrt(math.abs((OCV-V1-V2)^2 - 4 * (R0 * P))))/-2*R0;
 
+    if((I_L1 < 0 && P < 0) && (I_L2 > 0)){
+        return I_L1;
+    }
+
+    if((I_L2 < 0 && P < 0) && (I_L1 > 0)){
+        return I_L2;
+    }
+
+    if((I_L1 > 0 && P > 0) && (I_L2 < 0)){
+        return I_L1;
+    }
+
+    if((I_L2 > 0 && P > 0) && (I_L1 < 0)){
+        return I_L2;
+    }
+
     double V_T1 = P/I_L1;
     double V_T2 = P/I_L2;
+
 
     if(V_T1 == OCV-V1-V2-I_L1*R0){
         return IL_1;
