@@ -3,7 +3,8 @@
 #include <sstream>
 #include <utility>
 #include <iomanip>
-
+#include <math.h>
+#include <cmath>
 
 std::vector<std::pair<double,double> > c1;
 std::vector<std::pair<double,double> > c2;
@@ -26,6 +27,15 @@ OCV = 5
 power = 6
 */
 
+#define C1_FLAG 0
+#define C2_FLAG 1
+#define R0_FLAG 2
+#define R1_FLAG 3
+#define R2_FLAG 4
+#define OCV_FLAG     5
+#define POWER_FLAG   6
+
+
 double Calc_SOC(double prev_SOC,double Current, double delta_t)
 {
     double new_SOC = prev_SOC + Current/Q_n * delta_t;
@@ -33,21 +43,21 @@ double Calc_SOC(double prev_SOC,double Current, double delta_t)
 
 }
 
-double Calc_V1(double Prev_v1, double R1, double I_L, double C_1, double delta_t)
+double Calc_V1(double prev_V1, double R1, double I_L, double C_1, double delta_t)
 {
-    double new_V1 = Prev_v1 + delta_t * (-1 * prev_v1/R1 + I_L)/C_1;
-    return new_v1;
+    double new_V1 = prev_V1 + delta_t * (-1 * prev_V1/R1 + I_L)/C_1;
+    return new_V1;
 }
 
-double Calc_V2(double Prev_v2, double R2, double I_L, double C_2, double delta_t)
+double Calc_V2(double prev_V2, double R2, double I_L, double C_2, double delta_t)
 {
-    double new_V2 = Prev_v2 + delta_t * (-1 * prev_v2/R2 + I_L)/C_2;
-    return new_v2;
+    double new_V2 = prev_V2 + delta_t * (-1 * prev_V2/R2 + I_L)/C_2;
+    return new_V2;
 }
 
 double Calc_IL(double R0, double OCV, double V1, double V2, double IL, double P){
-    double I_L1 = (-1*(OCV-V1-V2) + math.sqrt(math.abs((OCV-V1-V2)^2 - 4 * (R0 * P))))/-2*R0;
-    double I_L2 = (-1*(OCV-V1-V2) - math.sqrt(math.abs((OCV-V1-V2)^2 - 4 * (R0 * P))))/-2*R0;
+    double I_L1 = (-1*(OCV-V1-V2) + sqrt(abs(pow(OCV-V1-V2,2) - 4 * (R0 * P))))/-2*R0;
+    double I_L2 = (-1*(OCV-V1-V2) - sqrt(abs(pow(OCV-V1-V2,2) - 4 * (R0 * P))))/-2*R0;
 
     if((I_L1 < 0 && P < 0) && (I_L2 > 0)){
         return I_L1;
@@ -70,10 +80,10 @@ double Calc_IL(double R0, double OCV, double V1, double V2, double IL, double P)
 
 
     if(V_T1 == OCV-V1-V2-I_L1*R0){
-        return IL_1;
+        return I_L1;
     }
     else{
-        return IL_2;
+        return I_L2;
     }
 }
 
@@ -133,26 +143,26 @@ void read_parameters(std::string parameter_csv, int parameter_flag)
 
             switch (parameter_flag)
             {
-                case 0:
+                case C1_FLAG:
                     c1.push_back(csv_pair);
                     break;
-                case 1:
+                case C2_FLAG:
                     c2.push_back(csv_pair);
                     break;
-                case 2:
+                case R0_FLAG:
                     r0.push_back(csv_pair);
                     break;
-                case 3:
+                case R1_FLAG:
                     r1.push_back(csv_pair);
                     break;
-                case 4:
+                case R2_FLAG:
                     r2.push_back(csv_pair);
                     break;
-                case 5:
+                case OCV_FLAG:
                     ocv.push_back(csv_pair);
                     break;
-                case 6
-                    power.push_back(csv_pair)
+                case POWER_FLAG:
+                    power.push_back(csv_pair);
             }
             
         }
