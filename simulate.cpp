@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <math.h>
 #include <cmath>
+#include <vector>
 
 std::vector<std::pair<double,double> > c1;
 std::vector<std::pair<double,double> > c2;
@@ -88,7 +89,7 @@ double Calc_IL(double R0, double OCV, double V1, double V2, double P){
         return I_L2;
     }
 }
-double return_OCV(double SOC, double power){
+double return_OCV(double SOC, double Power){
 
         //error checking
     if(SOC > 1){
@@ -104,12 +105,12 @@ double return_OCV(double SOC, double power){
     double value = 0.0;
     int low;
     int high;
-    int mid
+    int mid;
 
     
-    if(power > 0){
+    if(Power > 0){
          low = 0;
-         high = power_charge.size();
+         high = power.size();
             while(low <= high){
                 mid = low + (high-low)/2;
                 if(std::abs(ocv_charge[mid].first - SOC) < 0.00005){
@@ -122,7 +123,7 @@ double return_OCV(double SOC, double power){
                     high = mid + 1;
                 }
             }
-            throw std::runtime_error("SOC not found")
+            throw std::runtime_error("SOC not found");
     }  
     else{
         low = 0;
@@ -139,7 +140,7 @@ double return_OCV(double SOC, double power){
                     high = mid + 1;
                 }
             }
-            throw std::runtime_error("SOC not found")
+            throw std::runtime_error("SOC not found");
     }  
     return -1;
            
@@ -161,10 +162,10 @@ double return_Param(int parameter_flag, double SOC)
     double value = 0.0;
     int low;
     int high;
-    int mid
+    int mid;
 
     switch(parameter_flag){
-        Case C1_FLAG:
+        case C1_FLAG:
             low = 0;
             high = c1.size();
             
@@ -180,9 +181,9 @@ double return_Param(int parameter_flag, double SOC)
                     high = mid + 1;
                 }
             }
-            throw std::runtime_error("SOC not found")
+            throw std::runtime_error("SOC not found");
         break;
-        Case C2_FLAG:
+        case C2_FLAG:
             low = 0;
             high = c2.size();
             
@@ -198,9 +199,9 @@ double return_Param(int parameter_flag, double SOC)
                     high = mid + 1;
                 }
             }
-            throw std::runtime_error("SOC not found")
+            throw std::runtime_error("SOC not found");
         break;
-        Case R0_FLAG:
+        case R0_FLAG:
             low = 0;
             high = r0.size();
             
@@ -216,9 +217,9 @@ double return_Param(int parameter_flag, double SOC)
                     high = mid + 1;
                 }
             }
-            throw std::runtime_error("SOC not found")
+            throw std::runtime_error("SOC not found");
         break;
-        Case R1_FLAG
+        case R1_FLAG:
             low = 0;
             high = r1.size();
             
@@ -234,9 +235,9 @@ double return_Param(int parameter_flag, double SOC)
                     high = mid + 1;
                 }
             }
-            throw std::runtime_error("SOC not found")
+            throw std::runtime_error("SOC not found");
         break;
-        Case R2_FLAG:
+        case R2_FLAG:
             low = 0;
             high = r2.size();
             
@@ -262,7 +263,7 @@ double return_Param(int parameter_flag, double SOC)
 }
 
 double calc_P_diss(double V1, double V2, double IL, double R0, double R1, double R2){
-    return (V1^2)/R1 +(V2^2)/R2 + I_L^2*R0;
+    return pow(V1,2)/R1 + pow(V2,2)/R2 + pow(IL,2)*R0;
 }
 
 void read_parameters(std::string parameter_csv, int parameter_flag)
@@ -314,7 +315,7 @@ void read_parameters(std::string parameter_csv, int parameter_flag)
                     break;
                 case POWER_FLAG:
                     power.push_back(csv_pair);
-                case OCV_CHARGE_FLAG
+                case OCV_CHARGE_FLAG:
                     ocv_charge.push_back(csv_pair);
             }
             
@@ -346,7 +347,7 @@ void run_sim(){
     //Calculate load current
     double I_L = Calc_IL(R0,OCV,V1,V2,p_out);
     double p_diss = 0.0;
-    double e_diss 0.0;
+    double e_diss = 0.0;
 
     for(int i = 0; i < power.size(); i++){
         //Calculate SOC based on previous I_L
@@ -369,8 +370,8 @@ void run_sim(){
         
     }
 
-    std::cout<<"Total Power Dissipated: " << p_diss << endl;
-    std::cout<<"Total Energy Dissipated: " << e_diss << endl;
+    std::cout<<"Total Power Dissipated: " << p_diss << std::endl;
+    std::cout<<"Total Energy Dissipated: " << e_diss << std::endl;
 }
 
 
@@ -384,8 +385,8 @@ int main(int argc, char** argv)
     read_parameters("SOC_R1_INR_18650_25R.csv", 3);
     read_parameters("SOC_R2_INR_18650_25R.csv", 4);
     read_parameters("Samsung18650_25R DataDC_OCV_Curve.csv", 5);
-    read_parameters("output_2014.csv",6)
-    read_parameters("INR 18650-25R Open Circuit Voltage Charge.csv",7)
+    read_parameters("output_2014.csv",6);
+    read_parameters("INR 18650-25R Open Circuit Voltage Charge.csv",7);
 
     run_sim();
     
