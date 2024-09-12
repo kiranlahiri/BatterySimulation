@@ -11,7 +11,7 @@ std::vector<std::pair<double,double> > c1;
 std::vector<std::pair<double,double> > c2;
 std::vector<std::pair<double,double> > r0;
 std::vector<std::pair<double,double> > r1;
-std::vector<std::pair<double,double> > r2;
+std::vector<std::pair<double,double> > r2; 
 std::vector<std::pair<double,double> > ocv_discharge;
 std::vector<std::pair<double,double> > power; //First column is delta t (s), second column is Power (Wh)
 std::vector<std::pair<double,double> > ocv_charge;
