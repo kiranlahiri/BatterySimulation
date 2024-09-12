@@ -15,7 +15,7 @@ std::vector<std::pair<double,double> > r2;
 std::vector<std::pair<double,double> > ocv_discharge;
 std::vector<std::pair<double,double> > power; //First column is delta t (s), second column is Power (Wh)
 std::vector<std::pair<double,double> > ocv_charge;
-double Q_n = 3039.12; // for 18650-25R 9P36S, change for each case
+double Q_n = 2.5; // for 18650-25R 9P36S, change for each case
 double P_diss = 0.0;
 double E_diss = 0.0;
 /*
@@ -59,6 +59,7 @@ double Calc_V2(double prev_V2, double R2, double I_L, double C_2, double delta_t
 }
 
 double Calc_IL(double R0, double OCV, double V1, double V2, double P){
+    //std::cout << "R0; " << R0 << " v1: " << V1 << " V2 " << V2 << "Power_out: " << P<<  "OCV: " << OCV<< std::endl;
     double I_L1 = (-1*(OCV-V1-V2) + sqrt(abs(pow(OCV-V1-V2,2) - 4 * (R0 * P))))/-2*R0;
     double I_L2 = (-1*(OCV-V1-V2) - sqrt(abs(pow(OCV-V1-V2,2) - 4 * (R0 * P))))/-2*R0;
 
@@ -92,7 +93,7 @@ double Calc_IL(double R0, double OCV, double V1, double V2, double P){
 double return_OCV(double SOC, double Power){
 
         //error checking
-    if(SOC > 1){
+    if(SOC >= 1){
         SOC = 1;
     }
     else if(SOC < 0){
@@ -102,13 +103,40 @@ double return_OCV(double SOC, double Power){
     //search through the csv file by SOC and find one that equals the calculated SOC by ~0.00005
     //to do this efficiently, use a binary search
 
+ 
+
+// ocv polyfit charging -4783.78848787996x^10 + 27347.9312861984x^9 +	-67026.6988407755x^8 +
+//	92144.6069787111x^7	- 78029.8368377740x^6 + 42070.3825796194x^5 - 14424.1632098688x^4
+//	3053.81797893469x^3	- 375.676774229697x^2 + 24.9063595277509x - 2.72423333860835
+
+// ocv polyfit discharging 4313.04847052565x^10 + 24891.2165949856x^9 + -61632.9921177867x^8 + 85715.6445387034x^7
+//-73578.8063784470x^6 + 40329.2056130290x^5 -14113.3560968725x^4 + 3067.12971117682x^3	-390.407463955115x^2
+//+ 26.9957718142629x + 2.60049866650654
+    
+    if(Power > 0){
+        double OCV = -4783.78848787996*pow(SOC,10) + 27347.9312861984*pow(SOC,9)+	-67026.6988407755*pow(SOC,8)+
+        92144.6069787111*pow(SOC,7)	- 78029.8368377740*pow(SOC,6) + 42070.3825796194*pow(SOC,5) - 14424.1632098688*pow(SOC,4)
+        + 3053.81797893469*pow(SOC,3)	- 375.676774229697*pow(SOC,2) + 24.9063595277509*SOC - 2.72423333860835;
+
+        return OCV;
+    }  
+    else{
+        double OCV = 4313.04847052565*pow(SOC,10)+ 24891.2165949856*pow(SOC,9) -61632.9921177867*pow(SOC,8) + 85715.6445387034*pow(SOC,7)
+        -73578.8063784470*pow(SOC,6) + 40329.2056130290*pow(SOC,5) -14113.3560968725*pow(SOC,4) + 3067.12971117682*pow(SOC,3)	-390.407463955115*pow(SOC,2)
+        + 26.9957718142629*SOC + 2.60049866650654;
+        return OCV;
+       
+    }  
+    
+
+    
+    //search through the csv file by SOC and find one that equals the calculated SOC by ~0.00005
+    //to do this efficiently, use a binary search
     double value = 0.0;
     int low;
     int high;
     int mid;
-
-    
-    if(Power > 0){
+    /*if(Power > 0){
          low = 0;
          high = power.size();
             while(low <= high){
@@ -116,15 +144,15 @@ double return_OCV(double SOC, double Power){
                 if(std::abs(ocv_charge[mid].first - SOC) < 0.00005){
                     return ocv_charge[mid].second;
                 }
-                else if(ocv_charge[mid].first < SOC){
+                else if(ocv_charge[mid].first <SOC){
                     low = mid + 1;
                 }
                 else{
                     high = mid + 1;
                 }
             }
-            throw std::runtime_error("SOC not found");
-    }  
+            throw std::runtime_error("SOC not found OCV Charge");
+    }
     else{
         low = 0;
          high = ocv_discharge.size();
@@ -133,16 +161,21 @@ double return_OCV(double SOC, double Power){
                 if(std::abs(ocv_discharge[mid].first - SOC) < 0.00005){
                     return ocv_discharge[mid].second;
                 }
-                else if(ocv_discharge[mid].first < SOC){
+                else if(ocv_discharge[mid].first > SOC){
                     low = mid + 1;
                 }
                 else{
                     high = mid + 1;
                 }
             }
-            throw std::runtime_error("SOC not found");
-    }  
-    return -1;
+            throw std::runtime_error("SOC not found OCV discharge");
+    }
+    return -1;*/
+
+
+
+
+
            
         
 }
@@ -166,94 +199,98 @@ double return_Param(int parameter_flag, double SOC)
 
     switch(parameter_flag){
         case C1_FLAG:
-            low = 0;
-            high = c1.size();
-            
-            while(low <= high){
-                mid = low + (high-low)/2;
-                if(std::abs(c1[mid].first - SOC) < 0.00005){
-                    return c1[mid].second;
-                }
-                else if(c1[mid].first < SOC){
-                    low = mid + 1;
-                }
-                else{
-                    high = mid + 1;
-                }
+            if(0.6692170892 < SOC && SOC <=1.0){
+                value = -175720.8565447232*SOC+ 299651.6285285904;
+                return value;
             }
-            throw std::runtime_error("SOC not found");
+            else if(0.6692170892 > SOC && SOC >= 0.5469484539){
+                value = -1229161.6630156341*SOC + 1004632.2186795539;
+                return value;
+            }
+            else if(0.6692170892 > SOC && SOC >= 0.5469484539){
+                value = 623039.1046992310*SOC  -8426.1275344846;
+                return value;
+            }
+            else if(0.3883811021 > SOC && SOC >= 0.2355625405){
+                value = 345173.9582399001*SOC+ 99491.4442825682;
+                return value;
+
+            }
+            else if (0.2355625405 > SOC && SOC >=0.0959372458){
+                return 96048.6266527533*SOC + 203426.9573058586;
+            }
         break;
         case C2_FLAG:
-            low = 0;
-            high = c2.size();
-            
-            while(low <= high){
-                mid = low + (high-low)/2;
-                if(std::abs(c2[mid].first - SOC) < 0.00005){
-                    return c2[mid].second;
-                }
-                else if(c2[mid].first < SOC){
-                    low = mid + 1;
-                }
-                else{
-                    high = mid + 1;
-                }
+            if(0.6692170892<SOC && SOC<=1.0){
+                return -1195.3029576136*SOC + 1693.3156710063;
             }
-            throw std::runtime_error("SOC not found");
+            else if(0.6692170892 > SOC && SOC  >= 0.5469484539){
+                return -323.7877343021*SOC + 1110.0827900683;
+            }
+            else if(0.6692170892 > SOC && SOC >= 0.5469484539){
+                return -261.0309967982*SOC + 1075.7580895187;
+            }
+            else if(0.3883811021 > SOC && SOC >= 0.2355625405){
+                return 76.5806448999*SOC + 944.6361080343;
+
+            }
+            else if (0.2355625405 > SOC && SOC >=0.0959372458){
+                return 2374.8196396644*SOC + 403.2570917513;
+            }
         break;
         case R0_FLAG:
-            low = 0;
-            high = r0.size();
-            
-            while(low <= high){
-                mid = low + (high-low)/2;
-                if(std::abs(r0[mid].first - SOC) < 0.00005){
-                    return r0[mid].second;
-                }
-                else if(r0[mid].first < SOC){
-                    low = mid + 1;
-                }
-                else{
-                    high = mid + 1;
-                }
+            if(0.6692170892<SOC && SOC <=1.0){
+                return 0.0000000004*SOC + 0.0164292978;
             }
-            throw std::runtime_error("SOC not found");
+            else if(0.6692170892 > SOC && SOC >= 0.5469484539){
+                return 0.0004160072*SOC + 0.0161508989;
+            }
+            else if(0.6692170892 > SOC && SOC >= 0.5469484539){
+                return -0.0003260470*SOC + 0.0165567643;
+            }
+            else if(0.3883811021 > SOC && SOC >= 0.2355625405){
+                return -0.0009930624*SOC + 0.0168158205;
+
+            }
+            else if (0.2355625405 > SOC && SOC >=0.0959372458){
+                return -0.0040134822*SOC+ 0.0175273182;
+            }
         break;
         case R1_FLAG:
-            low = 0;
-            high = r1.size();
-            
-            while(low <= high){
-                mid = low + (high-low)/2;
-                if(std::abs(r1[mid].first - SOC) < 0.00005){
-                    return r1[mid].second;
-                }
-                else if(r1[mid].first < SOC){
-                    low = mid + 1;
-                }
-                else{
-                    high = mid + 1;
-                }
+            if(0.6692170892<SOC && SOC <=1.0){
+                return 0.0000452527*SOC + -0.0000002839;
             }
-            throw std::runtime_error("SOC not found");
+            else if(0.6692170892 > SOC && SOC >= 0.5469484539){
+                return 0.0001251343*SOC + -0.0000537420;
+            }
+            else if(0.6692170892 > SOC && SOC >= 0.5469484539){
+                return -0.0000479292*SOC + 0.0000409148;
+            }
+            else if(0.3883811021 > SOC && SOC >= 0.2355625405){
+                return -0.0000523497*SOC + 0.0000426316;
+
+            }
+            else if (0.2355625405 > SOC && SOC >=0.0959372458){
+                return 0.0000264995*SOC + 0.0000240577;
+            }
         break;
         case R2_FLAG:
-            low = 0;
-            high = r2.size();
-            
-            while(low <= high){
-                mid = low + (high-low)/2;
-                if(std::abs(r2[mid].first - SOC) < 0.00005){
-                    return r2[mid].second;
-                }
-                else if(r2[mid].first < SOC){
-                    low = mid + 1;
-                }
-                else{
-                    high = mid + 1;
-                }
+           if(0.6692170892<SOC && SOC<=1.0){
+                return 0.0134485583*SOC + 0.0017849537;
             }
-            throw std::runtime_error("SOC not found");
+            else if(0.6692170892 > SOC && SOC >= 0.5469484539){
+                return 0.0105284664*SOC + 0.0037391291;
+            }
+            else if(0.6692170892 > SOC && SOC >= 0.5469484539){
+                return 0.0105284664*SOC + 0.0037391291;
+            }
+            else if(0.3883811021 > SOC && SOC >= 0.2355625405){
+                return -0.0033225257*SOC + 0.0110127556;
+
+            }
+            else if (0.2355625405 > SOC && SOC >=0.0959372458){
+                return 0.0271582221*SOC + 0.0166275528;
+            }
         break;
 
 
@@ -346,8 +383,10 @@ void run_sim(){
     double OCV = return_OCV(SOC,p_out);
     //Calculate load current
     double I_L = Calc_IL(R0,OCV,V1,V2,p_out);
+
     double p_diss = 0.0;
     double e_diss = 0.0;
+    int num_cells = 324;
 
     for(int i = 0; i < power.size(); i++){
         //Calculate SOC based on previous I_L
@@ -359,16 +398,23 @@ void run_sim(){
         C1 = return_Param(C1_FLAG,SOC);
         C2 = return_Param(C2_FLAG,SOC);
         OCV = return_OCV(SOC,power[i].second);\
-
+        //change units on p_out
+        p_out = power[i].second / 3600 / num_cells;
         //Calculate V1, V2, and load current
         V1 = Calc_V1(V1,R1,I_L,C1,power[i].first);
         V2 = Calc_V2(V2,R2,I_L,C2,power[i].first);
         I_L = Calc_IL(R0,OCV,V1,V2,power[i].second);
+        std::cout << "Load Current:  " << I_L << " SOC: " << SOC << std::endl;
+
         //calculate total load current
-        p_diss += calc_P_diss(V1,V2,I_L,R0,R1,R2);
+        p_diss = p_diss+ calc_P_diss(V1,V2,I_L,R0,R1,R2);
         e_diss += p_diss*power[i].first;
+
+        std::cout << i << std::endl;
         
     }
+
+    
 
     std::cout<<"Total Power Dissipated: " << p_diss << std::endl;
     std::cout<<"Total Energy Dissipated: " << e_diss << std::endl;
